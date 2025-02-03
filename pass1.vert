@@ -34,7 +34,7 @@ void main()
 
   // calculate normal in VCS
 
-  normal = vec3( MV * vec4( vertNormal, 0.0 ) ); // Testing normal
+  normal = vec3( MV * vec4( vertNormal, 0.0 ) ); // Testing normalawdawdawd
 
   // Calculate the depth in [0,1]
 
