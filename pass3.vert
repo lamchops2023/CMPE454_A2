@@ -1,4 +1,4 @@
-// Pass 3 vertex shader
+// Pass 2 vertex shader
 //
 // Generate texture coordinates from raw vertex position.  The vertex
 // position is in [-1,1]x[-1,1] and is mapped to [0,1]x[0,1].
@@ -18,5 +18,6 @@ void main()
   // coordinates are in the range [-1,1] in the window.  You have to
   // map this to the range [0,1] of texture coordinates.
 
-  texCoords = vec2( 0.0, 0.0 );     // YOUR CODE HERE (identical to pass2.vert)
+  //texCoords = vec2( 0.0, 0.0 );     // YOUR CODE HERE
+  texCoords = (vertPosition.xy + 1.0)/2.0; // remap the vertex positions in [-1,1] to [0,1]
 }

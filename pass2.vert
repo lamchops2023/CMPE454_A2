@@ -18,5 +18,6 @@ void main()
   // coordinates are in the range [-1,1] in the window.  You have to
   // map this to the range [0,1] of texture coordinates.
 
-  texCoords = vec2( 0.0, 0.0 );     // YOUR CODE HERE
+  //texCoords = vec2( 0.0, 0.0 );     // YOUR CODE HERE
+  texCoords = (vertPosition.xy + 1.0)/2.0; // remap the vertex positions in [-1,1] to [0,1]
 }
