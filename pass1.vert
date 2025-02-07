@@ -25,17 +25,17 @@ void main()
   vec4 ccs_pos = MVP * vec4( vertPosition, 1.0f );
   gl_Position = ccs_pos;
 
-  
-
   // Provide a colour 
+  colour = vec3(1.0,0.0,0.0);         // YOUR CODE HERE
 
-  //colour = vec3(1.0,0.0,0.0);         // YOUR CODE HERE
-  colour = normalize(vertTexCoord);
   // calculate normal in VCS
-
   normal = vec3( MV * vec4( vertNormal, 0.0 ) ); // Testing normal
 
-  // Calculate the depth in [0,1]
+  vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+  float diffuse = dot(normal, lightDir);
+  colour = vec3(diffuse*colour); 
 
+
+  // Calculate the depth in [0,1]
   depth = 0.5 * ((ccs_pos.z / ccs_pos.w) + 1.0); // depth calculation by taking the 'normalized' z coordinate and adjusting for [0,1]
 }
