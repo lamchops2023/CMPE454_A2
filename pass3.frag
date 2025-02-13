@@ -21,68 +21,67 @@ uniform sampler2D laplacianSampler;
 
 out mediump vec4 outputColour;          // the output fragment colour as RGBA with A=1
 
+const mediump float numQuanta = 3.0;
+const mediump float kernelRadius = 3.0;
+const mediump float threshold = 0.1;
 
-void main()
+void main() {
+    // Sample depth and Laplacian
+    mediump float depth = texture(depthSampler, texCoords).r;
+    mediump float laplacian = texture(laplacianSampler, texCoords).r;
 
-{
-  mediump vec2 dummy = texCoords;  // REMOVE THIS ... It's just here because MacOS complains otherwise
+    // Discard background pixels far from silhouettes
+    // Adding a threshold to accurately edge-detect the laplacian
+    // && abs(laplacian) < 0.1
+    if (depth > 0.99 ) {
+        discard;
+    }
 
-  // [0 marks] Look up values for the depth and Laplacian.  Use only
-  // the R component of the texture as texture2D( ... ).r
+    // Sample object color and normal
+    mediump vec3 objectColor = texture(colourSampler, texCoords).rgb;
+    mediump vec3 normal = normalize(texture(normalSampler, texCoords).xyz);
 
-  // YOUR CODE HERE
+    // Compute quantized cel shading
+    mediump float NdotL = max(dot(normal, normalize(lightDir)), 0.2);
+    NdotL = round(NdotL * numQuanta) / numQuanta; // Quantize lighting by rounding to nearest integer value
+    mediump vec3 celShadedColor = objectColor * NdotL; // Compute colour
 
-  // [1 mark] Discard the fragment if it is a background pixel not
-  // near the silhouette of the object.
 
-  // YOUR CODE HERE
+    // Compute silhouette blending factor
+    mediump float minDist = kernelRadius;
 
-  // [0 marks] Look up value for the colour and normal.  Use the RGB
-  // components of the texture as texture2D( ... ).rgb or texture2D( ... ).xyz.
+    mediump vec2 offsets[4] = vec2[](
+        vec2(-kernelRadius, 0), // Left side
+        vec2(kernelRadius, 0), // Right Side
+        vec2(0, -kernelRadius), // Bottom
+        vec2(0, kernelRadius)   // Top
+    );
 
-  // YOUR CODE HERE
+    for(int i = 0; i< 4; i++)
+    {
+        mediump vec2 offset = offsets[i] * texCoordInc;
+        mediump float nearLaplacian = texture(laplacianSampler, offset+texCoords).r;
 
-  // [2 marks] Compute Cel shading, in which the diffusely shaded
-  // colour is quantized into four possible values.  Do not allow the
-  // diffuse component, N dot L, to be below 0.2.  That will provide
-  // some ambient shading.  Your code should use the 'numQuata' below
-  // to have that many divisions of quanta of colour.  Your code
-  // should be very efficient.
+        if(abs(nearLaplacian) >= threshold)
+        {
+            minDist = min(minDist, kernelRadius);
+        }
+    }
 
-  const mediump float numQuanta = 3.0;
+    //for (mediump float i = -kernelRadius; i <= kernelRadius; i++) {
+    //    for (mediump float j = -kernelRadius; j <= kernelRadius; j++) {
+    //        mediump vec2 offset = vec2(i, j) * texCoordInc;
+    //        mediump float neighborLaplacian = texture(laplacianSampler, texCoords + offset).r;
+    //        if (abs(neighborLaplacian) > threshold) {
+    //            minDist = min(minDist, length(vec2(i, j)));
+    //        }
+    //    }
+    //}
 
-  // YOUR CODE HERE
+    mediump float blendFactor = minDist / kernelRadius;
+    blendFactor = clamp(blendFactor, 0.0, 1.0);
 
-  // [2 marks] Look at the fragments in the neighbourhood of
-  // this fragment.  Your code should use the 'kernelRadius'
-  // below and check all fragments in the range
-  //
-  //    [-kernelRadius,+kernelRadius] x [-kernelRadius,+kernelRadius]
-  //
-  // around this fragment.
-  //
-  // Find the neighbouring fragments with a Laplacian beyond the
-  // threshold.  Of those fragments, find the distance to the closest
-  // one.  That distance, divided by the maximum possible distance
-  // inside the kernel, is the blending factor.
-  //
-  // You can use a large kernelRadius here (e.g. 10) to see that
-  // blending is being done correctly.  Do not use '3.0' or '-0.1' in
-  // your code; use 'kernelRadius' and 'threshold'.
-
-  const mediump float kernelRadius = 3.0;
-  const mediump float threshold = 0.1;
-
-  // YOUR CODE HERE
-
-  // [1 mark] Output the fragment colour.  If there is an edge
-  // fragment in the 3x3 neighbourhood of this fragment, output a grey
-  // colour based on the blending factor.  The grey should be
-  // completely black for an edge fragment, and should blend to the
-  // Phong colour as distance from the edge increases.  If these is no
-  // edge in the neighbourhood, output the cel-shaded colour.
-  
-  // YOUR CODE HERE
-
-  outputColour = vec4( 1.0, 0.0, 1.0, 1.0 );
+    // Final color blend between black (edge) and cel shading (interior)
+    mediump vec3 finalColor = mix(vec3(0.0), celShadedColor, blendFactor);
+    outputColour = vec4(finalColor, 1.0);
 }

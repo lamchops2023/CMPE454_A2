@@ -25,13 +25,18 @@ uniform mediump sampler2D depthSampler;
 layout (location = 0) out mediump vec3 fragLaplacian;
 
 // Define 3x3 Laplacian kernel offsets and weights
-const vec2 offsets[9] = vec2[](
-    vec2(-1, -1), vec2(0, -1), vec2(1, -1),
-    vec2(-1,  0), vec2(0,  0), vec2(1,  0),
-    vec2(-1,  1), vec2(0,  1), vec2(1,  1)
-);
+//const vec2 offsets[9] = vec2[](
+//    vec2(-1, -1), vec2(0, -1), vec2(1, -1),
+//    vec2(-1,  0), vec2(0,  0), vec2(1,  0),
+//    vec2(-1,  1), vec2(0,  1), vec2(1,  1)
+//);
 
-//const float offsets[9] = float[](-1, 0, 1,-1,0,1,-1,0,1);
+// TESTING WITH FLOAT OFFSETS AS OPPOSED TO VEC2, MIGHT IMPROVE COMPUTATION TIME?
+
+const float offsets[9] = float[](
+    -1, 0, 1,
+    -1, 0, 1,
+    -1, 0, 1);
 
 const float kernel[9] = float[](
     -1.0, -1.0, -1.0,
@@ -42,8 +47,6 @@ const float kernel[9] = float[](
 void main()
 
 {
-  //mediump vec2 dummy = texCoords;  // REMOVE THIS ... It's just here because MacOS complains otherwise
-
   // YOUR CODE HERE.  You will have to compute the Laplacian by
   // evaluating a 3x3 filter kernel at the current texture
   // coordinates.  The Laplacian weights of the 3x3 kernel are
@@ -55,17 +58,20 @@ void main()
   // Store a signed value for the Laplacian; do not take its absolute
   // value.
 
-  
-  //fragLaplacian = vec3( 0.1, 0.2, 0.3 );
-   float laplacian = 0.0;
+    //
 
-    // Loop through the 3x3 neighborhood
+    float laplacian = 0.0;
+
+    // Loop through the 3x3 neighborhood, applying the declared offsets to each texture coordinate
+    // Obtain the depth of the texture using the depth sampler and the computed sample coordinate
+    // Apply the convolution of the depths and filter kernel
+
     for (int i = 0; i < 9; i++) {
         vec2 sampleCoord = texCoords + offsets[i] * texCoordInc;
         float depth = texture(depthSampler, sampleCoord).r; // Sample depth texture
         laplacian += kernel[i] * depth; // Apply convolution
     }
 
-    // Store Laplacian result in RGB format
+    // Store Laplacian result as RGB 
     fragLaplacian = vec3(laplacian);
 }
