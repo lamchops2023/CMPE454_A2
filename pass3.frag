@@ -21,19 +21,20 @@ uniform sampler2D laplacianSampler;
 
 out mediump vec4 outputColour;          // the output fragment colour as RGBA with A=1
 
-const mediump float numQuanta = 3.0;
+const mediump float numQuanta = 4.0;
 const mediump float kernelRadius = 3.0;
 const mediump float threshold = 0.1;
 
 void main() {
+
     // Sample depth and Laplacian
     mediump float depth = texture(depthSampler, texCoords).r;
     mediump float laplacian = texture(laplacianSampler, texCoords).r;
 
     // Discard background pixels far from silhouettes
     // Adding a threshold to accurately edge-detect the laplacian
-    // && abs(laplacian) < 0.1
-    if (depth > 0.99 ) {
+    // 
+    if (depth > 0.99 && abs(laplacian) < threshold) {
         discard;
     }
 
@@ -42,41 +43,31 @@ void main() {
     mediump vec3 normal = normalize(texture(normalSampler, texCoords).xyz);
 
     // Compute quantized cel shading
-    mediump float NdotL = max(dot(normal, normalize(lightDir)), 0.2);
-    NdotL = round(NdotL * numQuanta) / numQuanta; // Quantize lighting by rounding to nearest integer value
-    mediump vec3 celShadedColor = objectColor * NdotL; // Compute colour
+    mediump float NdotL = max(dot(normal, normalize(lightDir)), 0.2);       // Compute NdotL and ensure it never falls below 0.2 
+    NdotL = round(NdotL * numQuanta) / numQuanta;                           // Quantize lighting by rounding to nearest integer value
+    mediump vec3 celShadedColor = objectColor * NdotL;                      // Compute colour
 
-
-    // Compute silhouette blending factor
     mediump float minDist = kernelRadius;
-
-    mediump vec2 offsets[4] = vec2[](
-        vec2(-kernelRadius, 0), // Left side
-        vec2(kernelRadius, 0), // Right Side
-        vec2(0, -kernelRadius), // Bottom
-        vec2(0, kernelRadius)   // Top
+    mediump vec2 offsets[5] = vec2[](
+        vec2(0.0, 0.0),           // Center
+        vec2(-kernelRadius, 0.0), // Left
+        vec2(kernelRadius, 0.0),  // Right
+        vec2(0.0, -kernelRadius), // Bottom
+        vec2(0.0, kernelRadius)   // Top
     );
 
-    for(int i = 0; i< 4; i++)
-    {
+    // Search neighbouring pixels to compute the neighbouring laplacian, if this value is greater than the set threshold,
+    // store the distance to the nearest edge
+    // Looping through offsets from (0,0) (center) by (-kernelRadius, 0) (left) -> (+kernelRadius, 0) (right)
+    // and (0, -kernelRadius) (bottom) -> (0, +kernelRadius) (top)
+    for (int i = 0; i < 5; i++) {
         mediump vec2 offset = offsets[i] * texCoordInc;
-        mediump float nearLaplacian = texture(laplacianSampler, offset+texCoords).r;
+        mediump float neighborLaplacian = texture(laplacianSampler, texCoords + offset).r;
 
-        if(abs(nearLaplacian) >= threshold)
-        {
-            minDist = min(minDist, kernelRadius);
+        if (abs(neighborLaplacian) > threshold) {
+            minDist = min(minDist, length(offsets[i]));
         }
     }
-
-    //for (mediump float i = -kernelRadius; i <= kernelRadius; i++) {
-    //    for (mediump float j = -kernelRadius; j <= kernelRadius; j++) {
-    //        mediump vec2 offset = vec2(i, j) * texCoordInc;
-    //        mediump float neighborLaplacian = texture(laplacianSampler, texCoords + offset).r;
-    //        if (abs(neighborLaplacian) > threshold) {
-    //            minDist = min(minDist, length(vec2(i, j)));
-    //        }
-    //    }
-    //}
 
     mediump float blendFactor = minDist / kernelRadius;
     blendFactor = clamp(blendFactor, 0.0, 1.0);
