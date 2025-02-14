@@ -33,12 +33,12 @@ layout (location = 0) out mediump vec3 fragLaplacian;
 
 // TESTING WITH FLOAT OFFSETS AS OPPOSED TO VEC2, MIGHT IMPROVE COMPUTATION TIME?
 
-const float offsets[9] = float[](
+const mediump float offsets[9] = float[](
     -1, 0, 1,
     -1, 0, 1,
     -1, 0, 1);
 
-const float kernel[9] = float[](
+const mediump float kernel[9] = float[](
     -1.0, -1.0, -1.0,
     -1.0,  8.0, -1.0,
     -1.0, -1.0, -1.0
@@ -60,15 +60,15 @@ void main()
 
     //
 
-    float laplacian = 0.0;
+    mediump float laplacian = 0.0;
 
     // Loop through the 3x3 neighborhood, applying the declared offsets to each texture coordinate
     // Obtain the depth of the texture using the depth sampler and the computed sample coordinate
     // Apply the convolution of the depths and filter kernel
 
     for (int i = 0; i < 9; i++) {
-        vec2 sampleCoord = texCoords + offsets[i] * texCoordInc;
-        float depth = texture(depthSampler, sampleCoord).r; // Sample depth texture
+        mediump vec2 sampleCoord = texCoords + offsets[i] * texCoordInc;
+        mediump float depth = texture(depthSampler, sampleCoord).r; // Sample depth texture
         laplacian += kernel[i] * depth; // Apply convolution
     }
 
